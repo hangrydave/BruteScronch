@@ -3,38 +3,52 @@
 
 #include <iostream>
 #include <string>
+#include <stdlib.h>
 
-using std::string;
+using std::wstring;
 
 int main(int argc, char **argv)
 {
-	string* halo1_guerilla_path = NULL;
-	string* halo2_guerilla_path = NULL;
-	string* output_path = NULL;
+	size_t converted_char_count;
+	wstring* halo1_guerilla_path = NULL;
+	wstring* halo2_guerilla_path = NULL;
+	wstring* output_path = NULL;
 
-	for (int i = 0; i < argc; i++)
+	for (int i = 1; i < argc; i++)
 	{
 		if (i >= argc)
 			break;
 
 		char* arg = argv[i];
-		if (arg == "-h2")
+		if (strcmp(arg, "-h2") == 0)
 		{
 			i++;
 			arg = argv[i];
-			halo2_guerilla_path = new string(arg);
+
+			size_t len = strlen(arg);
+			wchar_t* dest_buffer = new wchar_t[len];
+			mbstowcs_s(&converted_char_count, dest_buffer, len + 1, arg, len);
+			halo2_guerilla_path = new wstring(dest_buffer, len);
 		}
-		else if (arg == "-h1")
+		else if (strcmp(arg, "-h1") == 0)
 		{
 			i++;
 			arg = argv[i];
-			halo1_guerilla_path = new string(arg);
+
+			size_t len = strlen(arg);
+			wchar_t* dest_buffer = new wchar_t[len];
+			mbstowcs_s(&converted_char_count, dest_buffer, len + 1, arg, len);
+			halo1_guerilla_path = new wstring(dest_buffer, len);
 		}
-		else if (arg == "-o")
+		else if (strcmp(arg, "-o") == 0)
 		{
 			i++;
 			arg = argv[i];
-			output_path = new string(arg);
+
+			size_t len = strlen(arg);
+			wchar_t* dest_buffer = new wchar_t[len];
+			mbstowcs_s(&converted_char_count, dest_buffer, len + 1, arg, len);
+			output_path = new wstring(dest_buffer, len);
 		}
 	}
 
