@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tag_field_types.h"
+
 namespace halo2
 {
     struct s_datum_index
@@ -180,5 +182,6 @@ namespace halo2
 		f_type_max,
 	};
 
-    const char* get_actual_field_type(e_field_type field_type);
+    const char* get_field_code_type(e_field_type field_type);
+    size_t get_field_size(e_field_type field_type);
 }

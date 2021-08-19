@@ -1,6 +1,10 @@
 #pragma once
 
 #include <string>
+
+#define NOMINMAX
+#include <Windows.h>
+
 #include "halo2/tag_structures.h"
 #include "tag_field_types.h"
 
@@ -10,6 +14,9 @@ namespace halo2
 {
 	namespace
 	{
+		static HMODULE h2alang_handle;
+		static char* guerilla_file_data;
+
 		constexpr static size_t max_h2alang_string_id = 5207; // max id for string in h2alang
 		constexpr static size_t name_buffer_max_length = 4096;
 		constexpr static size_t empty_string_id = 87;
@@ -38,7 +45,7 @@ namespace halo2
 
 	struct s_h2_field_type_definition
 	{
-		e_field_type field_type;
+		e_field_type type;
 		unsigned short _padding;
 		ptr32 name_address;
 		ptr32 definition_address;
