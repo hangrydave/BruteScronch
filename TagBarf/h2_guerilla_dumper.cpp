@@ -49,28 +49,20 @@ namespace halo2
         }
     }
 
-    void dump_field(const s_h2_field_type_definition*& field, std::ofstream& out)
+    void dump_field(
+        const s_h2_field_type_definition*& field,
+        const std::unordered_map<unsigned long, std::string*>& tag_group_name_map,
+        std::ofstream& out)
     {
+        if (field->type == f_custom ||
+            field->type == f_useless_pad)
+            return;
+
         // figure out the field name
         std::string* field_name;
         std::string* field_comment = nullptr;
-        if (field->type == f_custom)
-        {
-            field_name = new std::string("custom field");
-        }
-        else if (field->type == f_explanation)
-        {
-            field_name = new std::string("explanation field");
-        }
-        else if (field->type == f_pad || field->type == f_useless_pad)
-        {
-            field_name = new std::string("padding field");
-        }
-        else if (field->type == f_skip)
-        {
-            field_name = new std::string("skip field");
-        }
-        else if (field->type == f_array_end)
+
+        if (field->type == f_array_end)
         {
             field_name = new std::string("array end field");
         }
@@ -85,7 +77,25 @@ namespace halo2
         }
 
         // dump the field
-        if (field->type == f_array_start)
+        if (field->type == f_struct)
+        {
+            const s_h2_tag_struct_definition tag_struct = *reinterpret_cast<const s_h2_tag_struct_definition*>(h2_va_to_pointer(guerilla_file_data, field->definition_address));
+
+            std::string* name;
+            std::string* display_name;
+            read_string(tag_struct.name_address, name);
+            read_string(tag_struct.display_name_address, display_name);
+
+            const s_h2_tag_block_definition struct_block = *reinterpret_cast<const s_h2_tag_block_definition*>(h2_va_to_pointer(guerilla_file_data, tag_struct.block_definition_address));
+
+            std::string* block_name;
+            std::string* block_display_name;
+            read_string(struct_block.name_address, block_name);
+            read_string(struct_block.display_name_address, block_display_name);
+
+            bool b = true;
+        }
+        else if (field->type == f_array_start)
         {
             size_t count = field->definition_address;
             size_t size = 0;
@@ -95,18 +105,29 @@ namespace halo2
                 size += get_field_size(field->type);
                 field++;
             }
-            out << "\t\tchar " << *field_name << "[" << count << "];\n";
+            out << "\t\tbyte " << *field_name << "[" << count << "];\n";
+        }
+        else if (field->type == f_pad)
+        {
+            size_t pad_length = field->definition_address;
+            out << "\t\tbyte padding[" << pad_length << "];\n";
+        }
+        else if (field->type == f_skip)
+        {
+            size_t skip_length = field->definition_address;
+            out << "\t\tbyte skip[" << skip_length << "];\n";
         }
         else if (field->type == f_array_end)
         {
             __debugbreak();
+            out << "uh oh uh oh uh oh uh oh\n";
         }
         else if (field->type == f_explanation)
         {
             std::string* explanation;
             read_string(field->definition_address, explanation);
-            out <<
-                "\t\t// " <<
+            out << "\t\t" <<
+                "// " <<
                 *field_name <<
                 "\n";
 
@@ -120,17 +141,27 @@ namespace halo2
                     char c = explanation->operator[](i);
                     out << c;
 
-                    if (c == '\n' && i != size - 1)
+                    if (i != size - 1)
                     {
-                        out << "\t\t// ";
+                        if (c == '\n')
+                        {
+                            out << "\t\t// ";
+                        }
+                    }
+
+                    if (i == size - 1)
+                    {
+                        if (c != '\n')
+                        {
+                            out << "\n";
+                        }
                     }
                 }
             }
         }
         else
         {
-            out <<
-                "\t\t" <<
+            out << "\t\t" <<
                 halo2::get_field_code_type(field->type) <<
                 " " <<
                 *field_name;
@@ -142,6 +173,75 @@ namespace halo2
 
             out << ";\n";
         }
+    }
+
+    void dump_tag_layout(
+        const ptr32& tag_layout_virtual_address,
+        const std::string* output_path,
+        const std::unordered_map<unsigned long, std::string*>& tag_group_name_map,
+        std::ofstream& tag_definition_list_out)
+    {
+        const s_h2_tag_layout_definition tag_layout_header =
+            *reinterpret_cast<const s_h2_tag_layout_definition*>(h2_va_to_pointer(guerilla_file_data, tag_layout_virtual_address));
+
+        bool unsupported_inheritance_flag = !!(tag_layout_header.inheritance_flags & 2);
+        if (unsupported_inheritance_flag)
+            return; // todo: find out why i need to do this and what it means. currently only happens with snd!
+
+        std::string* tag_layout_name = tag_group_name_map.at(tag_layout_header.group_tag.value);
+
+        // print out to tag def list
+        s_h2_tag_group tag_group = tag_layout_header.group_tag;
+        tag_definition_list_out << "#include \"" << tag_layout_name->c_str() << ".h\"\n";
+
+        // definition header
+        const char* definition_data = h2_va_to_pointer(guerilla_file_data, tag_layout_header.definition_address);
+        const s_h2_tag_block_definition tag_block_definition_header = *reinterpret_cast<const s_h2_tag_block_definition*>(definition_data);
+
+        // tag block names
+        const char* tag_block_display_name = h2_va_to_pointer(guerilla_file_data, tag_block_definition_header.display_name_address);
+        const char* tag_block_name = h2_va_to_pointer(guerilla_file_data, tag_block_definition_header.name_address);
+
+        // latest field set
+        s_h2_field_type_set_header field_set_header = *reinterpret_cast<const s_h2_field_type_set_header*>(h2_va_to_pointer(guerilla_file_data, tag_block_definition_header.field_set_latest_address));
+
+
+        // print out tag def
+        std::string tag_definition_path(*output_path);
+        tag_definition_path += "\\" + *tag_layout_name + ".h";
+        std::ofstream tag_definition_out(tag_definition_path);
+
+        tag_definition_out <<
+            "#pragma once\n\n" <<
+            "#include \"tag_definitions_base.h\"\n\n" <<
+            "namespace halo2\n" <<
+            "{\n" <<
+            "\tstruct " <<
+            *tag_layout_name;
+
+        // parent tag name
+        if (tag_layout_header.parent_group_tag.value < ULONG_MAX)
+        {
+            tag_definition_out << " : " << *tag_group_name_map.at(tag_layout_header.parent_group_tag.value);
+        }
+
+        tag_definition_out << "\n\t{\n";
+
+        // go through fields
+        const char* field_data = h2_va_to_pointer(guerilla_file_data, field_set_header.fields_address);
+        const s_h2_field_type_definition* field = reinterpret_cast<const s_h2_field_type_definition*>(field_data);
+        while (field->type != f_terminator)
+        {
+            dump_field(field, tag_group_name_map, tag_definition_out);
+
+            field++;
+        }
+
+
+
+
+        tag_definition_out << "\t};\n}" << std::endl;
+        tag_definition_out.close();
     }
 
 	void dump(const std::string* guerilla_path, const std::string* h2alang_path, const std::string* output_path)
@@ -174,7 +274,7 @@ namespace halo2
 
         std::unordered_map<unsigned long, std::string*> tag_group_name_map;
 
-        s_h2_tag_group_definition tag_layout_headers[halo2_num_tag_layouts];
+        s_h2_tag_layout_definition tag_layout_headers[halo2_num_tag_layouts];
 
         ptr32(&layout_addresses)[halo2_num_tag_layouts] = *reinterpret_cast<decltype(&layout_addresses)>(guerilla_file_data + h2_va_to_pa(halo2_tag_layout_table_address));
         for (unsigned long tag_layout_index = 0; tag_layout_index < halo2_num_tag_layouts; tag_layout_index++)
@@ -183,8 +283,7 @@ namespace halo2
             ptr32 tag_layout_virtual_address = layout_addresses[tag_layout_index];
             const char* tag_layout_data = h2_va_to_pointer(guerilla_file_data, tag_layout_virtual_address);
 
-            const s_h2_tag_group_definition tag_layout_header =
-                *reinterpret_cast<const s_h2_tag_group_definition*>(h2_va_to_pointer(guerilla_file_data, tag_layout_virtual_address));
+            const s_h2_tag_layout_definition tag_layout_header = *reinterpret_cast<const s_h2_tag_layout_definition*>(h2_va_to_pointer(guerilla_file_data, tag_layout_virtual_address));
 
             // get and sanitize layout name
             std::string* tag_layout_name = new std::string(h2_va_to_pointer(guerilla_file_data, tag_layout_header.name_address));
@@ -193,80 +292,13 @@ namespace halo2
 
             tag_layout_name->append("_definition");
             tag_group_name_map[tag_layout_header.group_tag.value] = tag_layout_name;
-
-            // child groups
-            /*for (unsigned short child_group_tag_index = 0; child_group_tag_index < tag_layout_header.num_child_group_tags; child_group_tag_index++)
-            {
-                s_h2_tag_group child_tag_group = tag_layout_header.child_group_tags[child_group_tag_index];
-            }*/
         }
 
         for (unsigned long tag_layout_index = 0; tag_layout_index < halo2_num_tag_layouts; tag_layout_index++)
         {
             // tag layout
             ptr32 tag_layout_virtual_address = layout_addresses[tag_layout_index];
-            const char* tag_layout_data = h2_va_to_pointer(guerilla_file_data, tag_layout_virtual_address);
-
-            const s_h2_tag_group_definition tag_layout_header =
-                *reinterpret_cast<const s_h2_tag_group_definition*>(h2_va_to_pointer(guerilla_file_data, tag_layout_virtual_address));
-
-            std::string* tag_layout_name = tag_group_name_map[tag_layout_header.group_tag.value];
-
-            // print out to tag def list
-            s_h2_tag_group tag_group = tag_layout_header.group_tag;
-            tag_definition_list_out << "#include \"" << tag_layout_name->c_str() << ".h\"\n";
-
-            // definition header
-            const char* definition_data = h2_va_to_pointer(guerilla_file_data, tag_layout_header.definition_address);
-            const s_h2_tag_block_definition tag_block_definition_header = *reinterpret_cast<const s_h2_tag_block_definition*>(definition_data);
-
-            // tag block names
-            const char* tag_block_display_name = h2_va_to_pointer(guerilla_file_data, tag_block_definition_header.display_name_address);
-            const char* tag_block_name = h2_va_to_pointer(guerilla_file_data, tag_block_definition_header.name_address);
-
-            //std::cout << '\t' << tag_block_display_name << ", " << tag_layout_name << '\n';
-
-            // print out tag def
-            std::string tag_definition_path(*output_path);
-            tag_definition_path += "\\" + *tag_layout_name + ".h";
-            std::ofstream tag_definition_out(tag_definition_path);
-
-            tag_definition_out <<
-                "#pragma once\n\n" <<
-                "#include \"tag_definitions_base.h\"\n\n" <<
-                "namespace halo2\n" <<
-                "{\n" <<
-                "\tstruct " <<
-                *tag_layout_name;
-
-            // parent tag name
-            if (tag_layout_header.parent_group_tag.value < ULONG_MAX)
-            {
-                tag_definition_out << " : " << *tag_group_name_map[tag_layout_header.parent_group_tag.value];
-            }
-            tag_definition_out << "\n\t{\n";
-
-            bool unsupported_inheritance_flag = !!(tag_layout_header.inheritance_flags & 2);
-            if (unsupported_inheritance_flag)
-                continue;
-
-            // latest field set
-            s_h2_field_type_set_header field_set_header = *reinterpret_cast<const s_h2_field_type_set_header*>(h2_va_to_pointer(guerilla_file_data, tag_block_definition_header.field_set_latest_address));
-
-            // go through fields
-            const char* field_data = h2_va_to_pointer(guerilla_file_data, field_set_header.fields_address);
-            const s_h2_field_type_definition* field = reinterpret_cast<const s_h2_field_type_definition*>(field_data);
-            while (field->type != f_terminator)
-            {
-                dump_field(field, tag_definition_out);
-
-                field++;
-                //std::cout << "\t\t" << field_name->c_str() << '\n';
-                
-            }
-
-            tag_definition_out << "\t};\n}" << std::endl;
-            tag_definition_out.close();
+            dump_tag_layout(tag_layout_virtual_address, output_path, tag_group_name_map, tag_definition_list_out);
         }
 
         tag_definition_list_out.close();

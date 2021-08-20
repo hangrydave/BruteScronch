@@ -60,7 +60,7 @@ namespace halo2
 		case f_custom_long_block_index:				return "long";
 		case f_data:								return "h_data";
 		case f_vertex_buffer:						return "s_tag_d3d_vertex_buffer";
-		case f_pad:									return "pad plonker";	// dynamic
+		case f_pad:									return "byte";	// dynamic
 		case f_useless_pad:							return "useless pad u chucklefucker";	// dynamic
 		case f_skip:								return "skip shitto";	// dynamic
 		case f_explanation:							return "explanation shithead";	// empty
@@ -128,13 +128,13 @@ namespace halo2
 		case f_custom_long_block_index:				return sizeof(long);
 		case f_data:								return sizeof(long);
 		case f_vertex_buffer:						return sizeof(s_tag_d3d_vertex_buffer);
-		case f_pad:									return -1; // dynamic
-		case f_useless_pad:							return -1; // dynamic
-		case f_skip:								return -1; // dynamic
-		case f_explanation:							return -1; // empty
-		case f_custom:								return -1; // empty
-		case f_struct:								return -1; // dynamic
-		case f_terminator:							return -1; // empty
+		case f_pad:									return -1;	// dynamic
+		case f_useless_pad:							return -1;	// dynamic
+		case f_skip:								return -1;	// dynamic
+		case f_explanation:							return 0;	// empty
+		case f_custom:								return 0;	// empty
+		case f_struct:								return -1;	// dynamic
+		case f_terminator:							return 0;	// empty
 		case f_array_start:							return -1;
 		case f_array_end:							return -1;
 		default: __debugbreak();

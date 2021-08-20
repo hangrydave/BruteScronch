@@ -64,9 +64,12 @@ namespace halo2
 	struct s_h2_tag_struct_definition
 	{
 		ptr32 name_address;
-		unsigned long group_tag;
+		s_h2_tag_group group_tag;
 		ptr32 display_name_address;
 		ptr32 block_definition_address;
+		size_t unknown1;
+		s_h2_tag_group group_tag2;
+		size_t unknown2;
 	};
 #define h2_tag_struct_size sizeof(s_h2_tag_struct_definition)
 
@@ -151,7 +154,7 @@ namespace halo2
 	};
 #define h2_tag_block_definition_size sizeof(s_h2_tag_block_definition)
 
-	struct s_h2_tag_group_definition
+	struct s_h2_tag_layout_definition
 	{
 		ptr32 name_address;
 		unsigned long flags;
@@ -170,7 +173,7 @@ namespace halo2
 		unsigned short : 16;
 		ptr32 default_tag_path_address;
 	};
-#define h2_tag_block_definition_size sizeof(s_h2_tag_group_definition)
+#define h2_tag_layout_definition_size sizeof(s_h2_tag_layout_definition)
 
 	void dump(const std::string* guerilla_path, const std::string* h2alang_path, const std::string* output_path);
 };
