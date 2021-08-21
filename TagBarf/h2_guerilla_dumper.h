@@ -5,7 +5,7 @@
 #define NOMINMAX
 #include <Windows.h>
 
-#include "halo2/tag_structures.h"
+#include "lowlevel/halo2/tag_structures.h"
 #include "tag_field_types.h"
 
 // a bunch of this is from Blam Creation Suite

@@ -154,13 +154,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
-    <ClInclude Include="halo2\definitions\bipd.h" />
-    <ClInclude Include="halo2\definitions\tag_definitions_base.h" />
-    <ClInclude Include="halo2\tag_structures.h" />
+    <ClInclude Include="lowlevel\halo2\definitions\bipd.h" />
+    <ClInclude Include="lowlevel\halo2\definitions\tag_definitions_base.h" />
+    <ClInclude Include="lowlevel\halo2\definitions\tag_definition_list.h" />
+    <ClInclude Include="lowlevel\halo2\tag_structures.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="halo2\tag_structures.cpp" />
+    <ClCompile Include="lowlevel\halo2\tag_structures.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

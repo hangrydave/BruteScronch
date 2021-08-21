@@ -21,13 +21,16 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="halo2\definitions\bipd.h">
+    <ClInclude Include="lowlevel\halo2\tag_structures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="halo2\tag_structures.h">
+    <ClInclude Include="lowlevel\halo2\definitions\bipd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="halo2\definitions\tag_definitions_base.h">
+    <ClInclude Include="lowlevel\halo2\definitions\tag_definition_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lowlevel\halo2\definitions\tag_definitions_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,7 +41,7 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="halo2\tag_structures.cpp">
+    <ClCompile Include="lowlevel\halo2\tag_structures.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

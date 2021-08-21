@@ -51,8 +51,7 @@ namespace halo2
 
     void dump_field(
         const s_h2_field_type_definition*& field,
-        const std::unordered_map<unsigned long, std::string*>& tag_group_name_map,
-        std::ofstream& out)
+        const std::unordered_map<unsigned long, std::string*>& tag_group_name_map)
     {
         if (field->type == f_custom ||
             field->type == f_useless_pad)
@@ -105,81 +104,33 @@ namespace halo2
                 size += get_field_size(field->type);
                 field++;
             }
-            out << "\t\tbyte " << *field_name << "[" << count << "];\n";
         }
         else if (field->type == f_pad)
         {
             size_t pad_length = field->definition_address;
-            out << "\t\tbyte padding[" << pad_length << "];\n";
         }
         else if (field->type == f_skip)
         {
             size_t skip_length = field->definition_address;
-            out << "\t\tbyte skip[" << skip_length << "];\n";
         }
         else if (field->type == f_array_end)
         {
             __debugbreak();
-            out << "uh oh uh oh uh oh uh oh\n";
         }
         else if (field->type == f_explanation)
         {
             std::string* explanation;
             read_string(field->definition_address, explanation);
-            out << "\t\t" <<
-                "// " <<
-                *field_name <<
-                "\n";
-
-            if (!explanation->empty())
-            {
-                out << "\t\t// ";
-
-                int size = explanation->size();
-                for (int i = 0; i < explanation->size(); i++)
-                {
-                    char c = explanation->operator[](i);
-                    out << c;
-
-                    if (i != size - 1)
-                    {
-                        if (c == '\n')
-                        {
-                            out << "\t\t// ";
-                        }
-                    }
-
-                    if (i == size - 1)
-                    {
-                        if (c != '\n')
-                        {
-                            out << "\n";
-                        }
-                    }
-                }
-            }
         }
         else
         {
-            out << "\t\t" <<
-                halo2::get_field_code_type(field->type) <<
-                " " <<
-                *field_name;
-
-            if (field_comment != nullptr)
-            {
-                out << " // " << *field_comment;
-            }
-
-            out << ";\n";
         }
     }
 
     void dump_tag_layout(
         const ptr32& tag_layout_virtual_address,
         const std::string* output_path,
-        const std::unordered_map<unsigned long, std::string*>& tag_group_name_map,
-        std::ofstream& tag_definition_list_out)
+        const std::unordered_map<unsigned long, std::string*>& tag_group_name_map)
     {
         const s_h2_tag_layout_definition tag_layout_header =
             *reinterpret_cast<const s_h2_tag_layout_definition*>(h2_va_to_pointer(guerilla_file_data, tag_layout_virtual_address));
@@ -192,7 +143,6 @@ namespace halo2
 
         // print out to tag def list
         s_h2_tag_group tag_group = tag_layout_header.group_tag;
-        tag_definition_list_out << "#include \"" << tag_layout_name->c_str() << ".h\"\n";
 
         // definition header
         const char* definition_data = h2_va_to_pointer(guerilla_file_data, tag_layout_header.definition_address);
@@ -205,43 +155,21 @@ namespace halo2
         // latest field set
         s_h2_field_type_set_header field_set_header = *reinterpret_cast<const s_h2_field_type_set_header*>(h2_va_to_pointer(guerilla_file_data, tag_block_definition_header.field_set_latest_address));
 
-
-        // print out tag def
-        std::string tag_definition_path(*output_path);
-        tag_definition_path += "\\" + *tag_layout_name + ".h";
-        std::ofstream tag_definition_out(tag_definition_path);
-
-        tag_definition_out <<
-            "#pragma once\n\n" <<
-            "#include \"tag_definitions_base.h\"\n\n" <<
-            "namespace halo2\n" <<
-            "{\n" <<
-            "\tstruct " <<
-            *tag_layout_name;
-
         // parent tag name
         if (tag_layout_header.parent_group_tag.value < ULONG_MAX)
         {
-            tag_definition_out << " : " << *tag_group_name_map.at(tag_layout_header.parent_group_tag.value);
+            // congratulations! you're adopted
         }
-
-        tag_definition_out << "\n\t{\n";
 
         // go through fields
         const char* field_data = h2_va_to_pointer(guerilla_file_data, field_set_header.fields_address);
         const s_h2_field_type_definition* field = reinterpret_cast<const s_h2_field_type_definition*>(field_data);
         while (field->type != f_terminator)
         {
-            dump_field(field, tag_group_name_map, tag_definition_out);
+            dump_field(field, tag_group_name_map);
 
             field++;
         }
-
-
-
-
-        tag_definition_out << "\t};\n}" << std::endl;
-        tag_definition_out.close();
     }
 
 	void dump(const std::string* guerilla_path, const std::string* h2alang_path, const std::string* output_path)
