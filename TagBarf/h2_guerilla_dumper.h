@@ -30,7 +30,7 @@ namespace halo2
 		static constexpr unsigned long halo2_num_tag_layouts = 120;
 
 		#define h2_va_to_pa(address) (address - halo2_base_address)
-		#define h2_va_to_pointer(data, address) (address ? ((const char*)(data + h2_va_to_pa(address))) : 0)
+		#define h2_va_to_pointer(data, address) (address ? ((char*)(data + h2_va_to_pa(address))) : 0)
 	}
 
 	struct s_h2_tag_group

@@ -5,6 +5,7 @@ using namespace tag_definition_common;
 
 namespace halo2
 {
+	// i don't think this function should exist and should be phased out for reasons of architecture, cleanliness, and morality
 	const char* get_field_code_type(e_field_type field_type)
 	{
 		switch (field_type)
